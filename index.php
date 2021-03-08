@@ -41,27 +41,89 @@
             $width_imagem = imagesx($imagem);
             $height_imagem = imagesy($imagem);
 
-            // Adicionando marca d'água na imagem original
-            imagecopy(
-                $imagem, 
-                $marca_dagua, 
-                (imagesx($imagem) - imagesx($marca_dagua)) / 2, 
-                (imagesy($imagem) - imagesy($marca_dagua)) / 2, 
-                0, 
-                0, 
-                $width_marca_dagua, 
-                $height_marca_dagua
-            );
+            if ($height_imagem <= $height_marca_dagua) {
+                $path_transparencia = 'transparencia/marca_dagua_temp.png';
+                // Calcula o ratio da altura
+                $ratio = $height_imagem / $height_marca_dagua;
 
-            // Saída
-            imagepng($imagem, $dir_imagens_manipuladas . DIRECTORY_SEPARATOR 
-                . $item->getFilename());
-            
-            // Limpando buffer
-            imagedestroy($imagem);
+                // Calcula as novas dimensões
+                $novo_width = $width_marca_dagua * $ratio;
+                $novo_height = $height_marca_dagua * $ratio;
 
-            // Removendo arquivo original
-            unlink($path);
+                // Cria uma nova transparência com as novas dimensões
+                $nova_transparencia = imagecreatetruecolor(
+                    $novo_width, 
+                    $novo_height
+                );
+                imagesavealpha($nova_transparencia, true);
+                $color = imagecolorallocatealpha(
+                    $nova_transparencia, 
+                    0, 
+                    0, 
+                    0, 
+                    127
+                );
+                imagefill($nova_transparencia, 0, 0, $color);
+                imagecopyresampled(
+                    $nova_transparencia, 
+                    $marca_dagua, 
+                    0, 
+                    0, 
+                    0, 
+                    0, 
+                    $novo_width, 
+                    $novo_height, 
+                    $width_marca_dagua, 
+                    $height_marca_dagua
+                );
+                imagepng($nova_transparencia, $path_transparencia);
+
+                // Adicionando marca d'água na imagem original
+                imagecopy(
+                    $imagem, 
+                    $nova_transparencia, 
+                    (imagesx($imagem) - imagesx($nova_transparencia)) / 2, 
+                    (imagesy($imagem) - imagesy($nova_transparencia)) / 2, 
+                    0, 
+                    0, 
+                    $novo_width, 
+                    $novo_height
+                );
+
+                // Saída
+                imagepng($imagem, $dir_imagens_manipuladas . DIRECTORY_SEPARATOR 
+                    . $item->getFilename());
+                
+                // Limpando buffer
+                imagedestroy($imagem);
+                imagedestroy($nova_transparencia);
+
+                // Removendo arquivo original
+                unlink($path);
+                unlink($path_transparencia);
+            } else {
+                // Adicionando marca d'água na imagem original
+                imagecopy(
+                    $imagem, 
+                    $marca_dagua, 
+                    (imagesx($imagem) - imagesx($marca_dagua)) / 2, 
+                    (imagesy($imagem) - imagesy($marca_dagua)) / 2, 
+                    0, 
+                    0, 
+                    $width_marca_dagua, 
+                    $height_marca_dagua
+                );
+
+                // Saída
+                imagepng($imagem, $dir_imagens_manipuladas . DIRECTORY_SEPARATOR 
+                    . $item->getFilename());
+                
+                // Limpando buffer
+                imagedestroy($imagem);
+
+                // Removendo arquivo original
+                unlink($path);
+            }
         }
     }
 
